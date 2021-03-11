@@ -1,0 +1,4 @@
+grant codeBase "file:/Users/eoincoulter/Desktop/disSysAss1/src/" {
+    permission java.security.AllPermission;
+};
+
