@@ -1,6 +1,8 @@
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.rmi.*;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -49,10 +51,16 @@ public class ATM {
                         long sessionId = Long.parseLong(args[0]);
                         int accountNumber = Integer.parseInt(args[2]);
                         BigDecimal withdraw = new BigDecimal(args[3]);
+
+                        BigDecimal bal = bank.getBalance(accountNumber, sessionId);
+                        bal = bal.subtract(withdraw);
+                        if(bal.signum() == -1){
+                            throw new IllegalArgumentException("Insufficient Funds");
+                        }
+
                         bank.withdraw(accountNumber, withdraw, sessionId);
                         System.out.println("Successfully Withdrew : €" + withdraw);
                     } catch (InvalidSession e) {
-
                     }
 
 
@@ -61,16 +69,25 @@ public class ATM {
                     try {
                         System.out.println("Trying to load statement");
                         long sessionId = Long.parseLong(args[0]);
+
                         Date from = new SimpleDateFormat("dd/MM/yyyy").parse(args[2]);
                         Date to = new SimpleDateFormat("dd/MM/yyyy").parse(args[3]);
+
+                        boolean dateCheck = isDateValid(from,to);
+                        if (!dateCheck){
+                            throw new IllegalArgumentException("Invalid Date Entered");
+                        }
 
                         Statement statement = bank.getStatement(from, to, sessionId);
                         System.out.print("Got Statement");
                         printStatement(statement);
 
-                    } catch (InvalidSession e) {
-                        System.out.print("Failed");
 
+                    }catch (IllegalStateException e){
+                        System.out.print("No Transactions between given dates");
+
+                    }catch (InvalidSession e) {
+                        System.out.print("Failed");
                     }
                 }
 
@@ -102,6 +119,27 @@ public class ATM {
         System.out.print("Successful login for " + user + " session ID " + answer + "for 5 minutes ");
 
 
+    }
+
+    public static boolean isDateValid(Date from, Date to) {
+        try {
+            SimpleDateFormat fullFormat = new SimpleDateFormat("dd-MM-yyyy");
+            SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy");
+            fullFormat.setLenient(false);
+
+            Date start = fullFormat.parse(String.valueOf(from));
+            Date end = fullFormat.parse(String.valueOf(to));
+
+            int yearStart = Integer.parseInt(yearFormat.format(start));
+            int yearEnd = Integer.parseInt(yearFormat.format(end));
+
+            if (yearStart >= 1900 && yearEnd >= 1900 && yearStart <= yearEnd)
+                    return true;
+            else
+                return false;
+        } catch (ParseException e) {
+            return false;
+        }
     }
 
 
